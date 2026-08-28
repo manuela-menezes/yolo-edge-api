@@ -1,4 +1,4 @@
-yaml
+
 # .github/workflows/edge-deploy.yml
 # Pipeline completo: lint → testes → build ARM64 → quality gate → deploy
 
