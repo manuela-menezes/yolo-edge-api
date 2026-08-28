@@ -1,4 +1,3 @@
-python
 """
 scripts/validate_model.py
 

@@ -1,4 +1,3 @@
-bash
 #!/bin/bash
 
 # scripts/deploy.sh
