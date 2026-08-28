@@ -1,27 +1,23 @@
-```python
 import base64
 import io
-import time
 import subprocess
-from pathlib import Path
+import time
 
-from fastapi import FastAPI, HTTPException, Response, Query
-from PIL import Image
-import numpy as np
-import httpx
 import cv2
-
+import httpx
+import numpy as np
+from fastapi import FastAPI, HTTPException, Query, Response
+from model import get_default_model_name, load_model
+from PIL import Image
 from schemas import (
-    PredictRequest,
-    PredictResponse,
     BatchPredictRequest,
     BatchPredictResponse,
+    Detection,
     HealthResponse,
     MetricsResponse,
-    Detection,
+    PredictRequest,
+    PredictResponse,
 )
-from model import load_model, get_default_model_name
-
 
 app = FastAPI(
     title="YOLO Inference API",
@@ -475,5 +471,4 @@ async def get_metrics():
         successful_requests=_metrics["success"],
         avg_inference_ms=round(avg, 2),
     )
-```
 
