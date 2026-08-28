@@ -1,4 +1,4 @@
 [core]
     remote = local_remote
 ['remote "local_remote"']
-    url = ssh://raspberry-pi@100.80.122.17/caminho/para/dvc-storage
+    url = ssh://100.80.122.17/home/raspberry-pi/dvc-storage
