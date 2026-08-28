@@ -1,6 +1,6 @@
 services:
   yolo-api:
-    image: ghcr.io/manuela-menezes/yolo-edge-api/yolo-api:latest
+    image: ${IMAGE:-ghcr.io/manuela-menezes/yolo-edge-api/yolo-api:latest}
     build:
       context: .
       dockerfile: Dockerfile.api
@@ -13,9 +13,9 @@ services:
     privileged: true
 
     volumes:
-      - ./models:/app/models:ro # pesos somente-leitura
-      - ./output:/app/output # resultados gravados aqui
-      - ./images:/app/images:ro # imagens de teste
+      - ./models:/app/models:ro
+      - ./output:/app/output
+      - ./images:/app/images:ro
       - /dev:/dev
       - /run/udev:/run/udev:ro
 
@@ -45,7 +45,7 @@ services:
       - ./output:/client/output
 
     environment:
-      - API_URL=http://yolo-api:8000 # resolve pelo nome do serviço
+      - API_URL=http://yolo-api:8000
 
     networks:
       - yolo-net
@@ -57,3 +57,4 @@ services:
 networks:
   yolo-net:
     driver: bridge
+
