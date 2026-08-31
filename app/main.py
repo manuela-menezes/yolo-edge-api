@@ -19,6 +19,8 @@ from schemas import (
     PredictResponse,
 )
 
+from preprocessing.preprocessor import CONFIG_DEFAULT, Preprocessor
+
 app = FastAPI(
     title="YOLO Inference API",
     description="API REST para inferência com YOLOv8 e Câmera no Raspberry Pi 5",
@@ -32,6 +34,7 @@ _metrics = {
     "total_ms": 0.0,
 }
 
+_preprocessor = Preprocessor(CONFIG_DEFAULT)   # instância global
 
 def _decode_image(image_base64: str) -> np.ndarray:
     raw = base64.b64decode(image_base64)
@@ -128,45 +131,43 @@ def _capture_frame_from_camera(device_id: int = 0) -> np.ndarray:
     )
 
 
-def _run_inference(
-    image_np: np.ndarray,
-    model_name: str,
-    confidence: float,
-) -> PredictResponse:
-
+def _run_inference(image_np: np.ndarray, model_name: str, confidence: float) -> PredictResponse:
     model = load_model(model_name)
 
+
+    # Pré-processamento explícito
+    # image_np chega em RGB (já convertido em _decode_image) --
+    # o Preprocessor espera BGR, então converte temporariamente
+    frame_bgr   = image_np[:, :, ::-1]
+    preproc_res = _preprocessor.process(frame_bgr)
+    frame_ready = preproc_res.frame  # RGB, letterboxed
+
+
     t0 = time.perf_counter()
-
-    results = model(
-        image_np,
-        conf=confidence,
-        verbose=False,
-    )
-
+    results = model(frame_ready, conf=confidence, verbose=False)
     elapsed_ms = (time.perf_counter() - t0) * 1000
 
-    detections = []
 
+    detections = []
     for r in results:
         for box in r.boxes:
-            coords = box.xyxy[0].tolist()
+            # Ajusta as coordenadas do espaço letterboxed de volta ao
+            # espaço da imagem original -- sem isso, os bboxes retornados
+            # pela API ficam deslocados sempre que houver padding
+            bbox_lb = box.xyxy[0].numpy().reshape(1, 4)
+            bbox_orig = _preprocessor.adjust_boxes(bbox_lb, preproc_res)[0]
             cls_id = int(box.cls[0].item())
             conf_val = float(box.conf[0].item())
 
-            detections.append(
-                Detection(
-                    label=model.names[cls_id],
-                    confidence=round(conf_val, 4),
-                    bbox=[
-                        round(float(c), 2)
-                        for c in coords
-                    ],
-                )
-            )
+
+            detections.append(Detection(
+                label=model.names[cls_id],
+                confidence=round(conf_val, 4),
+                bbox=[round(float(c), 2) for c in bbox_orig],
+            ))
+
 
     h, w = image_np.shape[:2]
-
     return PredictResponse(
         detections=detections,
         inference_ms=round(elapsed_ms, 2),
