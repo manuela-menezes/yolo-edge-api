@@ -45,68 +45,16 @@ echo "[INFO] Imagem atual: $PREVIOUS"
 # 1/4 — Baixa a nova imagem
 # ─────────────────────────────────────────────────────────────
 
-echo ""
 echo "[1/4] Baixando nova imagem..."
-
-PULL_SUCCESS=false
-
-for attempt in $(seq 1 "$PULL_RETRIES"); do
-
-    echo "[INFO] Tentativa $attempt/$PULL_RETRIES..."
-
-    if docker compose pull "$SERVICE_NAME"; then
-        PULL_SUCCESS=true
-        echo "[INFO] Nova imagem baixada com sucesso."
-        break
-    fi
-
-    if [ "$attempt" -lt "$PULL_RETRIES" ]; then
-        echo "[AVISO] Falha no download."
-        echo "[INFO] Tentando novamente em ${PULL_WAIT}s..."
-        sleep "$PULL_WAIT"
-    fi
-
-done
-
-# Se as 3 tentativas falharem, não mexe no container atual.
-if [ "$PULL_SUCCESS" = false ]; then
-    echo ""
-    echo "[ERRO] Não foi possível baixar a nova imagem."
-    echo "[ERRO] Deploy cancelado."
-    echo "[INFO] A versão atual permanece em execução."
-    exit 1
-fi
+docker compose pull
+python3 -m dvc pull models/yolo-epi.pt
 
 # ─────────────────────────────────────────────────────────────
 # 2/4 — Sobe a nova versão
 # ─────────────────────────────────────────────────────────────
 
-echo ""
 echo "[2/4] Iniciando nova versão..."
-
-if ! docker compose up -d "$SERVICE_NAME"; then
-
-    echo "[ERRO] Falha ao iniciar a nova versão."
-
-    if [ "$PREVIOUS" != "none" ]; then
-
-        echo "[ROLLBACK] Revertendo para: $PREVIOUS"
-
-        docker compose down || true
-
-        if IMAGE="$PREVIOUS" docker compose up -d "$SERVICE_NAME"; then
-            echo "[ROLLBACK] Container anterior iniciado."
-        else
-            echo "[ERRO CRÍTICO] Não foi possível iniciar a versão anterior."
-            exit 1
-        fi
-
-    else
-        echo "[AVISO] Não existe imagem anterior para rollback."
-    fi
-
-    exit 1
-fi
+docker compose up -d --build
 
 # ─────────────────────────────────────────────────────────────
 # 3/4 — Aguarda o serviço estabilizar
