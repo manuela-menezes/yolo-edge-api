@@ -1,0 +1,5 @@
+outs:
+- md5: 03ce7799c21e81e0b05478e911857696
+  size: 6246634
+  hash: md5
+  path: yolo-epi.pt
