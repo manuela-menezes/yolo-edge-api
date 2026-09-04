@@ -20,7 +20,7 @@ services:
       - /run/udev:/run/udev:ro
 
     environment:
-      - MODEL_NAME=yolov8n.pt
+      - MODEL_NAME=yolo-epi.pt
 
     networks:
       - yolo-net
@@ -53,6 +53,33 @@ services:
     depends_on:
       yolo-api:
         condition: service_healthy
+
+  yolo-stream:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: yolo-stream
+    ports:
+      - "5000:5000"
+    privileged: true
+    volumes:
+      - ./stream:/app/stream
+      - ./models:/app/models:ro
+      - ./preprocessing:/app/preprocessing
+      - /dev:/dev
+      - /run/udev:/run/udev:ro
+    environment:
+      - MODEL_NAME=yolov8n.pt
+    command: >
+      python3 stream/mjpeg_server.py
+      --device 0
+      --model models/yolo-epi.pt
+      --infer-every 3
+      --infer-size 320
+      --port 5000
+    restart: unless-stopped
+    depends_on:
+      - yolo-api
 
 networks:
   yolo-net:
